@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JSON Editor</title>
+    <!-- Include JSONEditor CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.5.6/jsoneditor.min.css" rel="stylesheet" type="text/css">
+    <!-- Include jQuery for AJAX -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Include JSONEditor JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.5.6/jsoneditor.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .file-list {
+            border: 1px solid #ccc;
+            overflow-y: auto;
+            max-height: 300px; 
+            margin-bottom: 10px;
+        }
+
+        .file-row {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            background-color: #fff;
+        }
+
+        .file-row:hover {
+            background-color: #f0f0f0;
+        }
+
+        .selected {
+            background-color: #d0e0f0;
+        }
+
+        button {
+            background-color: #008cba;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        button:hover {
+            background-color: #005f73;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: default;
+        }
+
+        #jsonEditor {
+            border: 1px solid #ccc;
+            background-color: #fff;
+            margin-top: 10px;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>JSON Editor</h1>
+
+    <div id="fileList" class="file-list"></div>
+    <button onclick="newFile()">New</button>
+    <button onclick="renameFile()" class="needs-selection">Rename</button>
+    <button onclick="duplicateFile()" class="needs-selection">Duplicate</button>
+    <button onclick="openFile()" class="needs-selection">Open</button>
+    <button onclick="deleteFile()" class="needs-selection">Delete</button>
+    <input type="file" id="fileInput">
+        <button id="uploadButton">Upload...</button>
+    </input>
+    
+    <div id="jsonEditor" style="width: 800px; height: 600px;"></div>
+    <button id="saveButton">Save JSON</button> 
+
+    <script>
+        var selectedFile = null;
+
+        // Load and display the list of files
+        function loadFileList(callback) {
+            $.ajax({
+                url: '/files',
+                type: 'GET',
+                success: function(files) {
+                    var fileListHtml = files.map(function(file) {
+                        return '<div class="file-row" onclick="selectFile(\'' + file + '\', this)">' + file + '</div>';
+                    }).join('');
+                    document.getElementById('fileList').innerHTML = fileListHtml;
+
+                    if (callback && typeof callback === 'function') {
+                        callback();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching files:', error);
+                }
+            });
+        }
+
+
+        // 'New' button handler
+        function newFile() {
+            $.ajax({
+                url: '/files',
+                type: 'POST',
+                success: function(response) {
+                    loadFileList();
+                    // Optionally open the new file in the editor
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error creating new file:', error);
+                }
+            });
+        }
+
+        // 'Rename' button handler
+        function renameFile() {
+            var newName = prompt("Enter new file name", "");
+            if(newName) {
+                $.ajax({
+                    url: '/files/' + selectedFile + '/rename',
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ new_name: newName }),
+                    success: function(response) {
+                        loadFileList();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error renaming file:', error);
+                    }
+                });
+            }
+        }
+
+        // 'Duplicate' button handler
+        function duplicateFile() {
+            if(selectedFile) {
+                $.ajax({
+                    url: '/files/' + selectedFile + '/duplicate',
+                    type: 'POST',
+                    success: function(response) {
+                        loadFileList();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error duplicating file:', error);
+                    }
+                });
+            }
+        }
+
+        // 'Open' button handler
+        function openFile() {
+            if(selectedFile) {
+                $.ajax({
+                    url: '/files/' + selectedFile,
+                    type: 'GET',
+                    success: function(fileContent) {
+                        editor.set(fileContent);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error opening file:', error);
+                    }
+                });
+            }
+        }
+
+        // 'Delete' button handler
+        function deleteFile() {
+            if(selectedFile) {
+                $.ajax({
+                    url: '/files/' + selectedFile + '/delete',
+                    type: 'DELETE',
+                    success: function(response) {
+                        loadFileList();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error deleting file:', error);
+                    }
+                });
+            }
+        }
+
+        // Load file list on page load
+        window.onload = loadFileList;
+
+        // Initialize the JSON Editor
+        var container = document.getElementById('jsonEditor');
+        var options = {
+            mode: 'tree',
+            modes: ['code', 'form', 'text', 'tree', 'view'], // allowed modes
+            onError: function (err) {
+              alert(err.toString());
+            },
+            onModeChange: function (newMode, oldMode) {
+              console.log('Mode switched from', oldMode, 'to', newMode);
+            }
+        };
+        var editor = new JSONEditor(container, options);
+
+        // Function to handle file uploads
+        function uploadFile(file) {
+            console.log("Uploading file", file)
+            var formData = new FormData();
+            formData.append('file', file);
+            console.log("FormData: ",formData)
+
+            $.ajax({
+                url: '/upload',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    // Update the JSON editor with the uploaded JSON
+                    editor.set(response);
+                    loadFileList(function() {
+                        selectFile(file.name);
+                        openFile();
+                    });
+                    // updateButtonStates();
+                },
+                error: function(xhr, status, error) {
+                    console.error('Upload error:', error);
+                    // Handle error
+                }
+            });
+        }
+
+        // Event listener for upload button
+        document.getElementById('uploadButton').addEventListener('click', function() {
+            event.preventDefault();
+            var file = document.getElementById('fileInput');
+            if (fileInput.files.length > 0) {
+                var file = fileInput.files[0];
+                console.log('Uploading file:', file.name); // Log the file name
+                uploadFile(file);
+            } else {
+                console.log('No file selected'); // Log if no file is selected
+            }
+        });
+
+        // Event listener for save button
+        document.getElementById('saveButton').addEventListener('click', function() {
+            console.log('Save button clicked');
+            if (selectedFile) {
+                var json = editor.get();
+                console.log('JSON data being sent:', JSON.stringify(json));
+                console.log('Selected File:', selectedFile);
+
+
+                $.ajax({
+                    url: '/files/' + selectedFile + '/update',  // Use the selected file's name in the URL
+                    type: 'PUT',  // Use PUT method to update the existing file
+                    contentType: 'application/json',
+                    data: JSON.stringify(json),
+                    success: function(response) {
+                        console.log('JSON saved:', response);
+                        // Handle successful save here
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Save error:', error);
+                        // Handle save error here
+                    }
+                });
+            } else {
+                alert('No file selected for saving.');
+            }
+        });
+
+        function selectFile(fileName, element) {
+            selectedFile = fileName;
+
+            // Remove 'selected' class from all file rows
+            var fileRows = document.querySelectorAll('.file-row');
+            fileRows.forEach(function(row) {
+                row.classList.remove('selected');
+            });
+
+            if (!element) {
+                // If element isn't provided, find it in the file list
+                fileRows.forEach(function(row) {
+                    if (row.textContent === fileName) {
+                        element = row;
+                    }
+                });
+            }
+
+            if (element) {
+                // Add 'selected' class to the clicked or found file row
+                element.classList.add('selected');
+            }
+            updateButtonStates();
+        }
+
+        function updateButtonStates() {
+            var buttonsThatNeedSelection = document.querySelectorAll('.needs-selection');
+            buttonsThatNeedSelection.forEach(function(button) {
+                button.disabled = !selectedFile;
+            });
+        }
+
+        // Call this function once at the start to initialize button states
+        updateButtonStates();
+    </script>
+</body>
+</html>
