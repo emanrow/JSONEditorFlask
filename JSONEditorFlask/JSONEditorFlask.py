@@ -5,7 +5,7 @@ import shutil
 import json
 
 app = Flask(__name__)
-UPLOAD_FOLDER = 'src/uploads'
+UPLOAD_FOLDER = 'JSONEditorFlask/src/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/', methods=['GET'])

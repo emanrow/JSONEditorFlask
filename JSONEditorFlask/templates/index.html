@@ -9,6 +9,35 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <!-- Include JSONEditor JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.5.6/jsoneditor.min.js"></script>
+    <script type="module">
+        // import { JSONEditor } from 'vanilla-jsoneditor/standalone.js'
+
+        // Or use it through a CDN (not recommended for use in production):
+        // import { JSONEditor } from 'https://unpkg.com/vanilla-jsoneditor/standalone.js'
+        import { JSONEditor } from 'https://cdn.jsdelivr.net/npm/vanilla-jsoneditor/standalone.js'
+
+        let content = {
+            text: undefined,
+            json: {
+                greeting: 'Hello World'
+            }
+        }
+
+        const editor = new JSONEditor({
+            target: document.getElementById('jsoneditor'),
+            props: {
+                content,
+                onChange: (updatedContent, previousContent, { contentErrors, patchResult }) => {
+                    // content is an object { json: unknown } | { text: string }
+                    console.log('onChange', { updatedContent, previousContent, contentErrors, patchResult })
+                    content = updatedContent
+                }
+            }
+        })
+
+        // use methods get, set, update, and onChange to get data in or out of the editor.
+        // Use updateProps to update properties.
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -84,7 +113,7 @@
         <button id="uploadButton">Upload...</button>
     </input>
     
-    <div id="jsonEditor" style="width: 800px; height: 600px;"></div>
+    <div id="jsoneditor" style="width: 800px; height: 600px;"></div>
     <button id="saveButton">Save JSON</button> 
 
     <script>
@@ -209,7 +238,19 @@
               console.log('Mode switched from', oldMode, 'to', newMode);
             }
         };
-        var editor = new JSONEditor(container, options);
+        // var editor = new JSONEditor(container, options);
+
+        const editor = new JSONEditor({
+            target: document.getElementById('jsoneditor'),
+            props: {
+                content,
+                onChange: (updatedContent, previousContent, { contentErrors, patchResult }) => {
+                    // content is an object { json: unknown } | { text: string }
+                    console.log('onChange', { updatedContent, previousContent, contentErrors, patchResult })
+                    content = updatedContent
+                }
+            }
+        })
 
         // Function to handle file uploads
         function uploadFile(file) {

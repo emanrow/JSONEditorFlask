@@ -6,6 +6,7 @@
 # virtual environments
 JSONEditorFlask/env/
 venv/
+env/
 
 # User-specific files
 *.rsuser
