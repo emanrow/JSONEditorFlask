@@ -9,35 +9,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <!-- Include JSONEditor JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.5.6/jsoneditor.min.js"></script>
-    <script type="module">
-        // import { JSONEditor } from 'vanilla-jsoneditor/standalone.js'
-
-        // Or use it through a CDN (not recommended for use in production):
-        // import { JSONEditor } from 'https://unpkg.com/vanilla-jsoneditor/standalone.js'
-        import { JSONEditor } from 'https://cdn.jsdelivr.net/npm/vanilla-jsoneditor/standalone.js'
-
-        let content = {
-            text: undefined,
-            json: {
-                greeting: 'Hello World'
-            }
-        }
-
-        const editor = new JSONEditor({
-            target: document.getElementById('jsoneditor'),
-            props: {
-                content,
-                onChange: (updatedContent, previousContent, { contentErrors, patchResult }) => {
-                    // content is an object { json: unknown } | { text: string }
-                    console.log('onChange', { updatedContent, previousContent, contentErrors, patchResult })
-                    content = updatedContent
-                }
-            }
-        })
-
-        // use methods get, set, update, and onChange to get data in or out of the editor.
-        // Use updateProps to update properties.
-    </script>
+    
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -104,141 +76,31 @@
     <h1>JSON Editor</h1>
 
     <div id="fileList" class="file-list"></div>
-    <button onclick="newFile()">New</button>
-    <button onclick="renameFile()" class="needs-selection">Rename</button>
-    <button onclick="duplicateFile()" class="needs-selection">Duplicate</button>
-    <button onclick="openFile()" class="needs-selection">Open</button>
-    <button onclick="deleteFile()" class="needs-selection">Delete</button>
+    <button id="newButton">New</button>
+    <button id="renameButton" class="needs-selection">Rename</button>
+    <button id="duplicateButton" class="needs-selection">Duplicate</button>
+    <button id="openButton" class="needs-selection">Open</button>
+    <button id="deleteButton" class="needs-selection">Delete</button>
     <input type="file" id="fileInput">
-        <button id="uploadButton">Upload...</button>
-    </input>
-    
+    <button id="uploadButton">Upload...</button>
+
     <div id="jsoneditor" style="width: 800px; height: 600px;"></div>
-    <button id="saveButton">Save JSON</button> 
 
-    <script>
-        var selectedFile = null;
+    <script type="module">
+        // import { JSONEditor } from 'vanilla-jsoneditor/standalone.js'
 
-        // Load and display the list of files
-        function loadFileList(callback) {
-            $.ajax({
-                url: '/files',
-                type: 'GET',
-                success: function(files) {
-                    var fileListHtml = files.map(function(file) {
-                        return '<div class="file-row" onclick="selectFile(\'' + file + '\', this)">' + file + '</div>';
-                    }).join('');
-                    document.getElementById('fileList').innerHTML = fileListHtml;
+        // Or use it through a CDN (not recommended for use in production):
+        import { JSONEditor } from 'https://unpkg.com/vanilla-jsoneditor/standalone.js'
+        //import { JSONEditor } from 'https://cdn.jsdelivr.net/npm/vanilla-jsoneditor/standalone.js'
 
-                    if (callback && typeof callback === 'function') {
-                        callback();
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error fetching files:', error);
-                }
-            });
-        }
+        let selectedFile = null;
 
-
-        // 'New' button handler
-        function newFile() {
-            $.ajax({
-                url: '/files',
-                type: 'POST',
-                success: function(response) {
-                    loadFileList();
-                    // Optionally open the new file in the editor
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error creating new file:', error);
-                }
-            });
-        }
-
-        // 'Rename' button handler
-        function renameFile() {
-            var newName = prompt("Enter new file name", "");
-            if(newName) {
-                $.ajax({
-                    url: '/files/' + selectedFile + '/rename',
-                    type: 'PUT',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ new_name: newName }),
-                    success: function(response) {
-                        loadFileList();
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Error renaming file:', error);
-                    }
-                });
+        let content = {
+            text: undefined,
+            json: {
+                greeting: 'Hello World'
             }
         }
-
-        // 'Duplicate' button handler
-        function duplicateFile() {
-            if(selectedFile) {
-                $.ajax({
-                    url: '/files/' + selectedFile + '/duplicate',
-                    type: 'POST',
-                    success: function(response) {
-                        loadFileList();
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Error duplicating file:', error);
-                    }
-                });
-            }
-        }
-
-        // 'Open' button handler
-        function openFile() {
-            if(selectedFile) {
-                $.ajax({
-                    url: '/files/' + selectedFile,
-                    type: 'GET',
-                    success: function(fileContent) {
-                        editor.set(fileContent);
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Error opening file:', error);
-                    }
-                });
-            }
-        }
-
-        // 'Delete' button handler
-        function deleteFile() {
-            if(selectedFile) {
-                $.ajax({
-                    url: '/files/' + selectedFile + '/delete',
-                    type: 'DELETE',
-                    success: function(response) {
-                        loadFileList();
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Error deleting file:', error);
-                    }
-                });
-            }
-        }
-
-        // Load file list on page load
-        window.onload = loadFileList;
-
-        // Initialize the JSON Editor
-        var container = document.getElementById('jsonEditor');
-        var options = {
-            mode: 'tree',
-            modes: ['code', 'form', 'text', 'tree', 'view'], // allowed modes
-            onError: function (err) {
-              alert(err.toString());
-            },
-            onModeChange: function (newMode, oldMode) {
-              console.log('Mode switched from', oldMode, 'to', newMode);
-            }
-        };
-        // var editor = new JSONEditor(container, options);
 
         const editor = new JSONEditor({
             target: document.getElementById('jsoneditor'),
@@ -247,17 +109,134 @@
                 onChange: (updatedContent, previousContent, { contentErrors, patchResult }) => {
                     // content is an object { json: unknown } | { text: string }
                     console.log('onChange', { updatedContent, previousContent, contentErrors, patchResult })
-                    content = updatedContent
+                    content = updatedContent;
                 }
             }
-        })
+        });
+
+
+        // use methods get, set, update, and onChange to get data in or out of the editor.
+        // Use updateProps to update properties.
+        function loadFileList() {
+            $.ajax({
+                url: '/files',
+                type: 'GET',
+                success: function (files) {
+                    var fileListHtml = files.map(function (file) {
+                        return '<div class="file-row">' + file + '</div>';
+                    }).join('');
+                    document.getElementById('fileList').innerHTML = fileListHtml;
+                    // Bind event listeners to each file row
+                    var fileRows = document.querySelectorAll('.file-row');
+                    fileRows.forEach(function (row, index) {
+                        row.addEventListener('click', function () {
+                            selectFile(files[index], row);
+                        });
+                    });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching files:', error);
+                }
+            });
+        }
+
+        function openFile() {
+            if (selectedFile) {
+                $.ajax({
+                    url: '/files/' + selectedFile,
+                    type: 'GET',
+                    dataType: 'json', // Ensure that the returned data is treated as JSON
+                    success: function (fileContent) {
+                        // Check if fileContent is already an object or needs parsing
+                        if (typeof fileContent === 'object') {
+                            editor.set({ json: fileContent }); // Directly use the JSON object
+                        } else {
+                            try {
+                                editor.set({ json: JSON.parse(fileContent) }); // Parse the string into JSON
+                            } catch (error) {
+                                console.error('Error parsing JSON:', error);
+                            }
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error opening file:', error);
+                    }
+                });
+            }
+        }
+
+        // 'New' button handler
+        function newFile() {
+            $.ajax({
+                url: '/files',
+                type: 'POST',
+                success: function (response) {
+                    loadFileList();
+                    // Optionally open the new file in the editor
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error creating new file:', error);
+                }
+            });
+        }
+
+        // 'Rename' button handler
+        function renameFile() {
+            var newName = prompt("Enter new file name", "");
+            if (newName) {
+                $.ajax({
+                    url: '/files/' + selectedFile + '/rename',
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ new_name: newName }),
+                    success: function (response) {
+                        loadFileList();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error renaming file:', error);
+                    }
+                });
+            }
+        }
+
+        // 'Duplicate' button handler
+        function duplicateFile() {
+            if (selectedFile) {
+                $.ajax({
+                    url: '/files/' + selectedFile + '/duplicate',
+                    type: 'POST',
+                    success: function (response) {
+                        loadFileList();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error duplicating file:', error);
+                    }
+                });
+            }
+        }
+
+        // 'Delete' button handler
+        function deleteFile() {
+            if (selectedFile) {
+                $.ajax({
+                    url: '/files/' + selectedFile + '/delete',
+                    type: 'DELETE',
+                    success: function (response) {
+                        loadFileList();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error deleting file:', error);
+                    }
+                });
+            }
+        }
 
         // Function to handle file uploads
         function uploadFile(file) {
             console.log("Uploading file", file)
             var formData = new FormData();
             formData.append('file', file);
-            console.log("FormData: ",formData)
+            console.log("FormData: ", formData)
 
             $.ajax({
                 url: '/upload',
@@ -265,16 +244,16 @@
                 data: formData,
                 processData: false,
                 contentType: false,
-                success: function(response) {
+                success: function (response) {
                     // Update the JSON editor with the uploaded JSON
                     editor.set(response);
-                    loadFileList(function() {
+                    loadFileList(function () {
                         selectFile(file.name);
                         openFile();
                     });
                     // updateButtonStates();
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     console.error('Upload error:', error);
                     // Handle error
                 }
@@ -282,7 +261,7 @@
         }
 
         // Event listener for upload button
-        document.getElementById('uploadButton').addEventListener('click', function() {
+        document.getElementById('uploadButton').addEventListener('click', function () {
             event.preventDefault();
             var file = document.getElementById('fileInput');
             if (fileInput.files.length > 0) {
@@ -295,11 +274,14 @@
         });
 
         // Event listener for save button
-        document.getElementById('saveButton').addEventListener('click', function() {
+        document.getElementById('saveButton').addEventListener('click', function () {
             console.log('Save button clicked');
             if (selectedFile) {
-                var json = editor.get();
-                console.log('JSON data being sent:', JSON.stringify(json));
+                // Get the current content from the editor
+                var currentContent = editor.get();
+                // Extract the content inside the 'json' key
+                let dataToSave = currentContent.json;
+                console.log('JSON data being sent:', JSON.stringify(currentContent));
                 console.log('Selected File:', selectedFile);
 
 
@@ -307,12 +289,12 @@
                     url: '/files/' + selectedFile + '/update',  // Use the selected file's name in the URL
                     type: 'PUT',  // Use PUT method to update the existing file
                     contentType: 'application/json',
-                    data: JSON.stringify(json),
-                    success: function(response) {
+                    data: JSON.stringify(dataToSave),
+                    success: function (response) {
                         console.log('JSON saved:', response);
                         // Handle successful save here
                     },
-                    error: function(xhr, status, error) {
+                    error: function (xhr, status, error) {
                         console.error('Save error:', error);
                         // Handle save error here
                     }
@@ -322,18 +304,26 @@
             }
         });
 
+        document.getElementById('openButton').addEventListener('click', openFile);
+        document.getElementById('newButton').addEventListener('click', newFile);
+        document.getElementById('duplicateButton').addEventListener('click', duplicateFile);
+        document.getElementById('deleteButton').addEventListener('click', deleteFile);
+        // Bind any other necessary events
+
+        window.onload = loadFileList;
+
         function selectFile(fileName, element) {
             selectedFile = fileName;
 
             // Remove 'selected' class from all file rows
             var fileRows = document.querySelectorAll('.file-row');
-            fileRows.forEach(function(row) {
+            fileRows.forEach(function (row) {
                 row.classList.remove('selected');
             });
 
             if (!element) {
                 // If element isn't provided, find it in the file list
-                fileRows.forEach(function(row) {
+                fileRows.forEach(function (row) {
                     if (row.textContent === fileName) {
                         element = row;
                     }
@@ -349,13 +339,23 @@
 
         function updateButtonStates() {
             var buttonsThatNeedSelection = document.querySelectorAll('.needs-selection');
-            buttonsThatNeedSelection.forEach(function(button) {
+            buttonsThatNeedSelection.forEach(function (button) {
                 button.disabled = !selectedFile;
             });
         }
 
         // Call this function once at the start to initialize button states
         updateButtonStates();
+
+    </script>
+
+    <button id="saveButton">Save JSON</button>
+
+    <script>
+
+        
+
+        
     </script>
 </body>
 </html>
